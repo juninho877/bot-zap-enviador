@@ -52,32 +52,10 @@ class QRManager {
             return;
         }
 
-        try {
-            // Verificar se o código existe
-            const response = await fetch(`/admin/instances`);
-            
-            if (!response.ok) {
-                errorDiv.textContent = 'Erro ao verificar código';
-                return;
-            }
-
-            const data = await response.json();
-            const instance = data.data.find(inst => inst.secret_code === secretCode);
-
-            if (!instance) {
-                errorDiv.textContent = 'Código secreto não encontrado';
-                return;
-            }
-
-            this.currentSecretCode = secretCode;
-            this.showQRScreen();
-            this.loadQRCode();
-            errorDiv.textContent = '';
-
-        } catch (error) {
-            errorDiv.textContent = 'Erro ao conectar com o servidor';
-            console.error('Code verification error:', error);
-        }
+        this.currentSecretCode = secretCode;
+        this.showQRScreen();
+        this.loadQRCode();
+        errorDiv.textContent = '';
     }
 
     showCodeScreen() {
