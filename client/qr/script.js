@@ -56,28 +56,6 @@ class QRManager {
         this.showQRScreen();
         this.loadQRCode();
         errorDiv.textContent = '';
-    }
-
-    showCodeScreen() {
-        document.getElementById('codeScreen').classList.add('active');
-        document.getElementById('qrScreen').classList.remove('active');
-        this.stopQRCheck();
-    }
-
-    showQRScreen() {
-        document.getElementById('codeScreen').classList.remove('active');
-        document.getElementById('qrScreen').classList.add('active');
-    }
-
-    async loadQRCode() {
-        const qrContent = document.getElementById('qrContent');
-        const errorDiv = document.getElementById('qrError');
-        const successDiv = document.getElementById('qrSuccess');
-
-        // Limpar mensagens
-        errorDiv.textContent = '';
-        successDiv.textContent = '';
-
         // Mostrar loading
         qrContent.innerHTML = `
             <div class="loading">
