@@ -27,7 +27,7 @@ async function startSock(secretCode, authFolderPath, activeConnections) {
     const sock = makeWASocket({
       auth: state,
       printQRInTerminal: false,
-      browser: ["Ubuntu", "Chrome", "22.04.4"],
+      browser: ["Chrome", "Windows", "10"],
     });
 
     // Variáveis para controle do QR
