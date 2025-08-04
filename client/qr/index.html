@@ -8,13 +8,13 @@
 </head>
 <body>
     <div class="container">
-        <!-- Tela de Código Secreto (Login) -->
-        <div id="codeScreen" class="screen active">
-            <div class="code-card">
+        <!-- Tela de Login com Código Secreto -->
+        <div id="loginScreen" class="screen active">
+            <div class="login-card">
                 <h1>🔑 Acessar Sessão WhatsApp</h1>
                 <p class="description">Digite o código secreto da sua instância para gerenciar a sessão.</p>
                 
-                <form id="codeForm">
+                <form id="loginForm">
                     <div class="form-group">
                         <label for="secretCode">Código Secreto:</label>
                         <input type="text" id="secretCode" name="secretCode" placeholder="Digite o código secreto" required>
@@ -22,27 +22,36 @@
                     <button type="submit" class="btn btn-primary">Acessar Sessão</button>
                 </form>
                 
-                <div id="codeError" class="error-message"></div>
+                <div id="loginError" class="error-message"></div>
             </div>
         </div>
 
         <!-- Painel de Sessão -->
-        <div id="sessionDashboardScreen" class="screen">
+        <div id="sessionPanel" class="screen">
             <div class="session-card">
                 <div class="session-header">
-                    <h1>📱 Sessão WhatsApp</h1>
-                    <button id="backToCodeBtn" class="btn btn-secondary">← Trocar Código</button>
+                    <h1>📱 Painel WhatsApp</h1>
+                    <button id="logoutBtn" class="btn btn-secondary">← Trocar Código</button>
                 </div>
 
                 <div class="session-info">
-                    <p><strong>Código Secreto:</strong> <span id="displaySecretCode"></span></p>
-                    <p><strong>Status:</strong> <span id="sessionStatusBadge" class="status-badge"></span></p>
-                    <p><strong>Última Atualização:</strong> <span id="lastUpdated"></span></p>
+                    <div class="info-row">
+                        <span class="info-label">Código Secreto:</span>
+                        <span id="displaySecretCode" class="info-value"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span id="sessionStatus" class="status-badge"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Última Atualização:</span>
+                        <span id="lastUpdated" class="info-value"></span>
+                    </div>
                 </div>
 
                 <div class="session-actions">
-                    <button id="connectBtn" class="btn btn-primary">Conectar / Gerar QR</button>
-                    <button id="disconnectBtn" class="btn btn-danger">Desconectar</button>
+                    <button id="connectBtn" class="btn btn-success">🔗 Conectar / Gerar QR</button>
+                    <button id="disconnectBtn" class="btn btn-danger">🔌 Desconectar</button>
                 </div>
 
                 <div id="sessionMessages">
@@ -51,16 +60,20 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Modal do QR Code -->
-        <div id="qrModal" class="modal">
-            <div class="modal-content">
+    <!-- Modal do QR Code -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📱 Conectar WhatsApp</h2>
                 <span class="close-button">&times;</span>
-                <h2>Escaneie o QR Code</h2>
-                <div id="qrModalContent" class="qr-modal-body">
-                    <!-- QR Code ou mensagem de status será carregado aqui -->
-                </div>
-                <p class="qr-instructions">Use o WhatsApp no seu celular para escanear este código.</p>
+            </div>
+            <div id="qrModalBody" class="modal-body">
+                <!-- Conteúdo do QR será carregado aqui -->
+            </div>
+            <div class="modal-footer">
+                <p class="qr-instructions">Abra o WhatsApp no seu celular e escaneie este código QR.</p>
             </div>
         </div>
     </div>

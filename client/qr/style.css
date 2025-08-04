@@ -22,41 +22,44 @@ body {
 .screen {
     display: none;
     width: 100%;
-    max-width: 500px;
+    max-width: 600px;
 }
 
 .screen.active {
     display: block;
 }
 
-/* Code Screen (Login) */
-.code-card {
+/* Login Screen */
+.login-card {
     background: white;
     padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     text-align: center;
+    max-width: 450px;
+    margin: 0 auto;
 }
 
-.code-card h1 {
+.login-card h1 {
     margin-bottom: 15px;
     color: #333;
     font-size: 28px;
+    font-weight: 600;
 }
 
 .description {
     margin-bottom: 30px;
     color: #666;
     font-size: 16px;
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
-/* Session Dashboard */
+/* Session Panel */
 .session-card {
     background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    padding: 35px;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
 .session-header {
@@ -64,131 +67,172 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    flex-wrap: wrap;
-    gap: 15px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f0f0f0;
 }
 
 .session-header h1 {
     color: #333;
-    font-size: 24px;
+    font-size: 26px;
+    font-weight: 600;
 }
 
 .session-info {
-    margin-bottom: 25px;
-    line-height: 1.8;
+    margin-bottom: 30px;
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 12px;
+    border-left: 4px solid #25D366;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
     font-size: 16px;
 }
 
-.session-info strong {
+.info-row:last-child {
+    margin-bottom: 0;
+}
+
+.info-label {
+    font-weight: 600;
     color: #555;
+}
+
+.info-value {
+    color: #333;
+    font-family: 'Courier New', monospace;
+    background: #e9ecef;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
 }
 
 .session-actions {
     display: flex;
     gap: 15px;
     justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 #sessionMessages {
-    margin: 15px 0;
-    min-height: 20px;
+    min-height: 25px;
+    text-align: center;
 }
 
 /* Status Badges */
 .status-badge {
-    padding: 6px 12px;
-    border-radius: 20px;
+    padding: 8px 16px;
+    border-radius: 25px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
-    display: inline-block;
-    margin-left: 10px;
+    letter-spacing: 0.5px;
 }
 
 .status-connected {
-    background: #d4edda;
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
     color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
 .status-connecting {
-    background: #fff3cd;
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
     color: #856404;
+    border: 1px solid #ffeaa7;
 }
 
 .status-disconnected, .status-logged_out {
-    background: #f8d7da;
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
     color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 /* Modal */
 .modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
+    display: none;
+    position: fixed;
+    z-index: 1000;
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
     justify-content: center;
     align-items: center;
 }
 
 .modal-content {
-    background-color: #fefefe;
-    margin: auto;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
     width: 90%;
-    max-width: 450px;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow: hidden;
     position: relative;
-    text-align: center;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 30px;
+    background: #25D366;
+    color: white;
+}
+
+.modal-header h2 {
+    font-size: 22px;
+    font-weight: 600;
 }
 
 .close-button {
-    color: #aaa;
-    float: right;
+    color: white;
     font-size: 28px;
     font-weight: bold;
-    position: absolute;
-    top: 10px;
-    right: 20px;
     cursor: pointer;
+    line-height: 1;
+    transition: opacity 0.3s ease;
 }
 
-.close-button:hover,
-.close-button:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
+.close-button:hover {
+    opacity: 0.7;
 }
 
-.qr-modal-body {
-    margin-top: 20px;
-    min-height: 200px;
+.modal-body {
+    padding: 30px;
+    text-align: center;
+    min-height: 250px;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
+    align-items: center;
 }
 
-.qr-image {
-    max-width: 100%;
-    height: auto;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 15px;
+.modal-footer {
+    padding: 20px 30px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
 }
 
 .qr-instructions {
     color: #666;
     font-size: 14px;
     line-height: 1.5;
-    margin-top: 15px;
+    text-align: center;
+    margin: 0;
+}
+
+.qr-image {
+    max-width: 100%;
+    height: auto;
+    border: 3px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Form Styles */
@@ -200,31 +244,35 @@ body {
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    font-weight: 500;
+    font-weight: 600;
     color: #555;
+    font-size: 16px;
 }
 
 .form-group input {
     width: 100%;
     padding: 15px;
     border: 2px solid #e1e5e9;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 16px;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
+    background: #fafafa;
 }
 
 .form-group input:focus {
     outline: none;
     border-color: #25D366;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
 }
 
 /* Buttons */
 .btn {
-    padding: 12px 24px;
+    padding: 14px 28px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     text-decoration: none;
@@ -232,39 +280,65 @@ body {
     align-items: center;
     gap: 8px;
     justify-content: center;
-    min-width: 120px;
+    min-width: 140px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
 }
 
 .btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary {
-    background: #25D366;
+    background: linear-gradient(135deg, #25D366, #20b358);
     color: white;
 }
 
 .btn-primary:hover {
-    background: #20b358;
+    background: linear-gradient(135deg, #20b358, #1a9e4a);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #20c997, #17a2b8);
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: linear-gradient(135deg, #6c757d, #5a6268);
     color: white;
 }
 
 .btn-secondary:hover {
-    background: #5a6268;
+    background: linear-gradient(135deg, #5a6268, #495057);
 }
 
 .btn-danger {
-    background: #dc3545;
+    background: linear-gradient(135deg, #dc3545, #c82333);
     color: white;
 }
 
 .btn-danger:hover {
-    background: #c82333;
+    background: linear-gradient(135deg, #c82333, #bd2130);
 }
 
 .btn:disabled {
@@ -278,19 +352,23 @@ body {
     box-shadow: none;
 }
 
+.btn:disabled::before {
+    display: none;
+}
+
 /* Messages */
 .error-message {
     color: #dc3545;
-    margin-top: 15px;
     font-size: 14px;
-    text-align: center;
+    font-weight: 500;
+    margin-top: 10px;
 }
 
 .success-message {
     color: #28a745;
-    margin-top: 15px;
     font-size: 14px;
-    text-align: center;
+    font-weight: 500;
+    margin-top: 10px;
 }
 
 /* Loading */
@@ -298,13 +376,13 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
     color: #666;
 }
 
 .loading-spinner {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
     border: 4px solid #f3f3f3;
     border-top: 4px solid #25D366;
     border-radius: 50%;
@@ -316,23 +394,50 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+.loading-text {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Status Messages */
+.status-message {
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.status-message.status-connected {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+    border: 2px solid #c3e6cb;
+}
+
+.status-message.status-error {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border: 2px solid #f5c6cb;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .container {
         padding: 15px;
     }
     
-    .code-card, .session-card, .modal-content {
+    .login-card, .session-card {
         padding: 25px;
     }
     
     .session-header {
         flex-direction: column;
+        gap: 15px;
         text-align: center;
     }
     
     .session-header h1 {
-        font-size: 20px;
+        font-size: 22px;
     }
     
     .session-actions {
@@ -343,18 +448,41 @@ body {
     .btn {
         width: 100%;
     }
+    
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .modal-content {
+        margin: 20px;
+        width: calc(100% - 40px);
+    }
+    
+    .modal-header, .modal-body, .modal-footer {
+        padding: 20px;
+    }
 }
 
 @media (max-width: 480px) {
-    .code-card, .session-card, .modal-content {
+    .login-card, .session-card {
         padding: 20px;
     }
     
-    .code-card h1 {
+    .login-card h1 {
         font-size: 24px;
     }
     
     .description {
+        font-size: 14px;
+    }
+    
+    .session-info {
+        padding: 20px;
+    }
+    
+    .info-row {
         font-size: 14px;
     }
 }
