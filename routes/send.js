@@ -4,14 +4,23 @@ const mime = require("mime-types");
 
 const router = express.Router();
 
-module.exports = (sock) => {
+module.exports = (activeConnections) => {
   router.post("/send", async (req, res) => {
-    const { number, text, imageUrl } = req.body;
+    const { secret_code, number, text, imageUrl } = req.body;
 
-    if (!number || !text) {
+    if (!secret_code || !number || !text) {
       return res.status(400).json({
         success: false,
-        error: "Campos obrigatórios: number e text.",
+        error: "Campos obrigatórios: secret_code, number e text.",
+      });
+    }
+
+    // Verifica se a instância está ativa
+    const sock = activeConnections[secret_code];
+    if (!sock) {
+      return res.status(404).json({
+        success: false,
+        error: "Instância não encontrada ou não está conectada. Verifique o secret_code e se o WhatsApp está conectado."
       });
     }
 
@@ -39,8 +48,8 @@ module.exports = (sock) => {
       res.json({ success: true, message: "Mensagem enviada com sucesso." });
 
     } catch (err) {
-      console.error("Erro ao enviar mensagem:", err);
-      res.status(500).json({ success: false, error: "Erro interno ao enviar." });
+      console.error(`Erro ao enviar mensagem via ${secret_code}:`, err);
+      res.status(500).json({ success: false, error: "Erro interno ao enviar mensagem." });
     }
   });
 
