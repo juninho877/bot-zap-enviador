@@ -1,270 +1,337 @@
-class WhatsAppConnector {
-        constructor() {
-            this.currentSecretCode = null;
-            this.qrCheckInterval = null;
-            this.init();
-        }
+class UserSessionManager {
+    constructor() {
+        this.currentSecretCode = null;
+        this.statusPollingInterval = null;
+        this.init();
+    }
 
-        init() {
-            this.bindEvents();
-            this.checkInitialURL();
-        }
+    init() {
+        this.bindEvents();
+        this.checkInitialURL();
+    }
 
-        bindEvents() {
-            // Formulário de código secreto
-            document.getElementById('codeForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleCodeSubmit();
-            });
+    bindEvents() {
+        // Formulário de código secreto (Login)
+        document.getElementById('codeForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleCodeSubmit();
+        });
 
-            // Botão Voltar
-            document.getElementById('backBtn').addEventListener('click', () => {
-                this.handleBackToCodeScreen();
-            });
+        // Botão Voltar para tela de código
+        document.getElementById('backToCodeBtn').addEventListener('click', () => {
+            this.handleBackToCodeScreen();
+        });
 
-            // Botão Atualizar QR
-            document.getElementById('refreshQrBtn').addEventListener('click', () => {
-                this.loadQRCode(true); // Força a atualização
-            });
+        // Botão Conectar / Gerar QR
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            this.handleConnectButtonClick();
+        });
 
-            // Botão Desconectar
-            document.getElementById('disconnectBtn').addEventListener('click', () => {
-                this.disconnectInstance();
-            });
-        }
+        // Botão Desconectar
+        document.getElementById('disconnectBtn').addEventListener('click', () => {
+            this.disconnectInstance();
+        });
 
-        checkInitialURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const secretCodeFromURL = urlParams.get('secret_code');
-            if (secretCodeFromURL) {
-                document.getElementById('secretCode').value = secretCodeFromURL;
-                this.currentSecretCode = secretCodeFromURL;
-                this.showQRScreen();
-                this.loadQRCode();
-            } else {
-                this.showCodeScreen();
+        // Fechar modal do QR Code
+        document.querySelector('#qrModal .close-button').addEventListener('click', () => {
+            this.closeModal('qrModal');
+        });
+
+        // Fechar modal clicando fora
+        window.addEventListener('click', (event) => {
+            if (event.target === document.getElementById('qrModal')) {
+                this.closeModal('qrModal');
             }
-        }
+        });
+    }
 
-        handleCodeSubmit() {
-            const secretCodeInput = document.getElementById('secretCode');
-            const secretCode = secretCodeInput.value.trim();
-            const errorDiv = document.getElementById('codeError');
-
-            if (!secretCode) {
-                errorDiv.textContent = 'Por favor, digite um código secreto.';
-                return;
-            }
-
-            this.currentSecretCode = secretCode;
-            errorDiv.textContent = ''; // Limpa qualquer erro anterior
-            this.showQRScreen();
-            this.loadQRCode();
-        }
-
-        handleBackToCodeScreen() {
-            this.showCodeScreen();
-            this.currentSecretCode = null;
-            this.stopQRCheck();
-            this.clearQRContent();
-            document.getElementById('secretCode').value = ''; // Limpa o input
-            document.getElementById('qrError').textContent = '';
-            document.getElementById('qrSuccess').textContent = '';
-        }
-
-        showCodeScreen() {
-            document.getElementById('codeScreen').classList.add('active');
-            document.getElementById('qrScreen').classList.remove('active');
-        }
-
-        showQRScreen() {
-            document.getElementById('codeScreen').classList.remove('active');
-            document.getElementById('qrScreen').classList.add('active');
-        }
-
-        clearQRContent() {
-            const qrContent = document.getElementById('qrContent');
-            qrContent.innerHTML = '';
-        }
-
-        setQRContent(html) {
-            const qrContent = document.getElementById('qrContent');
-            qrContent.innerHTML = html;
-        }
-
-        setQRMessages(errorMsg = '', successMsg = '') {
-            document.getElementById('qrError').textContent = errorMsg;
-            document.getElementById('qrSuccess').textContent = successMsg;
-        }
-
-        async loadQRCode(forceRefresh = false) {
-            if (!this.currentSecretCode) {
-                this.setQRMessages('Erro: Código secreto não definido.');
-                this.showCodeScreen();
-                return;
-            }
-
-            this.setQRContent(`
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Carregando QR Code...</p>
-                </div>
-            `);
-            this.setQRMessages(); // Limpa mensagens anteriores
-            this.stopQRCheck(); // Para qualquer verificação anterior
-
-            try {
-                const response = await fetch(`/qr/connect/${this.currentSecretCode}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    if (data.status === 'connected') {
-                        this.setQRContent(`
-                            <div class="status-message status-connected">
-                                ✅ WhatsApp Conectado!
-                            </div>
-                            <p class="qr-instructions">Você já pode enviar mensagens.</p>
-                        `);
-                        this.setQRMessages('', 'Conectado com sucesso!');
-                        document.getElementById('refreshQrBtn').disabled = true;
-                    } else if (data.status === 'connecting' && data.data.qr_image) {
-                        this.setQRContent(`
-                            <img src="${data.data.qr_image}" alt="QR Code" class="qr-image">
-                            <p class="qr-instructions">Escaneie este QR Code com seu celular para conectar o WhatsApp.</p>
-                        `);
-                        this.setQRMessages('', 'QR Code gerado. Escaneie para conectar.');
-                        document.getElementById('refreshQrBtn').disabled = false;
-                        this.startQRCheck(); // Inicia a verificação de status
-                    } else {
-                        this.setQRContent(`
-                            <div class="status-message status-connecting">
-                                ⏳ Aguardando QR Code...
-                            </div>
-                            <p class="qr-instructions">Aguarde enquanto o QR Code é gerado.</p>
-                        `);
-                        this.setQRMessages('', 'Aguardando QR Code...');
-                        document.getElementById('refreshQrBtn').disabled = false;
-                        this.startQRCheck(); // Inicia a verificação de status
-                    }
-                } else {
-                    this.setQRContent(`
-                        <div class="status-message status-disconnected">
-                            ❌ Erro ao carregar QR Code
-                        </div>
-                    `);
-                    this.setQRMessages(data.error || 'Erro desconhecido ao carregar QR Code.');
-                    document.getElementById('refreshQrBtn').disabled = false;
-                    if (data.code === 'NOT_FOUND') {
-                        // Se o código não for encontrado, volta para a tela inicial
-                        this.showCodeScreen();
-                        document.getElementById('codeError').textContent = data.error;
-                    }
-                }
-            } catch (error) {
-                console.error('Erro ao carregar QR Code:', error);
-                this.setQRContent(`
-                    <div class="status-message status-disconnected">
-                        ❌ Erro de conexão
-                    </div>
-                `);
-                this.setQRMessages('Não foi possível conectar ao servidor. Tente novamente.');
-                document.getElementById('refreshQrBtn').disabled = false;
-            }
-        }
-
-        startQRCheck() {
-            this.stopQRCheck(); // Garante que apenas um intervalo esteja ativo
-            this.qrCheckInterval = setInterval(() => {
-                this.checkConnectionStatus();
-            }, 3000); // Verifica a cada 3 segundos
-        }
-
-        stopQRCheck() {
-            if (this.qrCheckInterval) {
-                clearInterval(this.qrCheckInterval);
-                this.qrCheckInterval = null;
-            }
-        }
-
-        async checkConnectionStatus() {
-            if (!this.currentSecretCode) {
-                this.stopQRCheck();
-                return;
-            }
-
-            try {
-                const response = await fetch(`/qr/status/${this.currentSecretCode}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    if (data.data.status === 'connected') {
-                        this.setQRContent(`
-                            <div class="status-message status-connected">
-                                ✅ WhatsApp Conectado!
-                            </div>
-                            <p class="qr-instructions">Você já pode enviar mensagens.</p>
-                        `);
-                        this.setQRMessages('', 'Conectado com sucesso!');
-                        document.getElementById('refreshQrBtn').disabled = true;
-                        this.stopQRCheck(); // Para de verificar quando conectado
-                    } else if (data.data.status === 'logged_out' || data.data.status === 'disconnected') {
-                        this.setQRContent(`
-                            <div class="status-message status-disconnected">
-                                ❌ Desconectado
-                            </div>
-                            <p class="qr-instructions">Sua sessão foi desconectada. Por favor, gere um novo QR Code ou verifique o código secreto.</p>
-                        `);
-                        this.setQRMessages('Sessão desconectada. Tente novamente.', '');
-                        document.getElementById('refreshQrBtn').disabled = false;
-                        this.stopQRCheck(); // Para de verificar quando desconectado
-                    } else if (data.data.status === 'connecting' && !document.querySelector('.qr-image')) {
-                        // Se estiver conectando mas o QR não apareceu, tenta carregar o QR novamente
-                        this.loadQRCode();
-                    }
-                } else {
-                    console.error('Erro ao verificar status:', data.error);
-                    // Se houver erro na verificação de status, pode ser que a instância não exista mais
-                    this.setQRMessages(data.error || 'Erro ao verificar status da conexão.');
-                    this.stopQRCheck();
-                }
-            } catch (error) {
-                console.error('Erro de rede ao verificar status:', error);
-                this.setQRMessages('Erro de rede ao verificar status. Verifique sua conexão.');
-                this.stopQRCheck();
-            }
-        }
-
-        async disconnectInstance() {
-            if (!this.currentSecretCode) {
-                alert('Nenhuma instância selecionada para desconectar.');
-                return;
-            }
-
-            if (!confirm('Tem certeza que deseja desconectar esta instância?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/qr/disconnect/${this.currentSecretCode}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    alert('Instância desconectada com sucesso!');
-                    this.handleBackToCodeScreen(); // Volta para a tela de código
-                } else {
-                    alert(`Erro ao desconectar: ${data.error || 'Erro desconhecido'}`);
-                }
-            } catch (error) {
-                console.error('Erro ao desconectar instância:', error);
-                alert('Erro de rede ao desconectar instância.');
-            }
+    checkInitialURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const secretCodeFromURL = urlParams.get('secret_code');
+        if (secretCodeFromURL) {
+            document.getElementById('secretCode').value = secretCodeFromURL;
+            this.currentSecretCode = secretCodeFromURL;
+            this.showScreen('sessionDashboardScreen');
+            this.loadSessionDetails();
+        } else {
+            this.showScreen('codeScreen');
         }
     }
 
-    // Inicializar o conector quando a página carregar
-    const whatsAppConnector = new WhatsAppConnector();
+    handleCodeSubmit() {
+        const secretCodeInput = document.getElementById('secretCode');
+        const secretCode = secretCodeInput.value.trim();
+        const errorDiv = document.getElementById('codeError');
+
+        if (!secretCode) {
+            errorDiv.textContent = 'Por favor, digite um código secreto.';
+            return;
+        }
+
+        this.currentSecretCode = secretCode;
+        errorDiv.textContent = ''; // Limpa qualquer erro anterior
+        this.showScreen('sessionDashboardScreen');
+        this.loadSessionDetails();
+    }
+
+    handleBackToCodeScreen() {
+        this.showScreen('codeScreen');
+        this.currentSecretCode = null;
+        this.stopStatusPolling();
+        document.getElementById('secretCode').value = ''; // Limpa o input
+        this.setSessionMessages(); // Limpa mensagens
+        this.clearSessionDetails(); // Limpa detalhes da sessão
+    }
+
+    showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    openModal(modalId) {
+        document.getElementById(modalId).style.display = 'flex';
+    }
+
+    closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    setSessionMessages(errorMsg = '', successMsg = '') {
+        document.getElementById('sessionError').textContent = errorMsg;
+        document.getElementById('sessionSuccess').textContent = successMsg;
+    }
+
+    clearSessionDetails() {
+        document.getElementById('displaySecretCode').textContent = '';
+        document.getElementById('sessionStatusBadge').textContent = '';
+        document.getElementById('sessionStatusBadge').className = 'status-badge';
+        document.getElementById('lastUpdated').textContent = '';
+        document.getElementById('connectBtn').disabled = true;
+        document.getElementById('disconnectBtn').disabled = true;
+    }
+
+    async loadSessionDetails() {
+        if (!this.currentSecretCode) {
+            this.setSessionMessages('Erro: Código secreto não definido.');
+            this.showScreen('codeScreen');
+            return;
+        }
+
+        this.setSessionMessages('', 'Carregando detalhes da sessão...');
+        this.clearSessionDetails(); // Limpa antes de carregar
+
+        try {
+            const response = await fetch(`/qr/status/${this.currentSecretCode}`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.updateSessionUI(data.data);
+                this.setSessionMessages('', 'Detalhes da sessão carregados.');
+                this.startStatusPolling();
+            } else {
+                this.setSessionMessages(data.error || 'Erro ao carregar detalhes da sessão.');
+                if (data.code === 'NOT_FOUND') {
+                    this.showScreen('codeScreen');
+                    document.getElementById('codeError').textContent = data.error;
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao carregar detalhes da sessão:', error);
+            this.setSessionMessages('Não foi possível conectar ao servidor para carregar detalhes da sessão.');
+        }
+    }
+
+    updateSessionUI(sessionData) {
+        document.getElementById('displaySecretCode').textContent = sessionData.secret_code;
+        
+        const statusBadge = document.getElementById('sessionStatusBadge');
+        statusBadge.textContent = this.getStatusText(sessionData.status);
+        statusBadge.className = `status-badge status-${sessionData.status}`;
+        
+        document.getElementById('lastUpdated').textContent = new Date(sessionData.updated_at).toLocaleString('pt-BR');
+
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+
+        if (sessionData.status === 'connected') {
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+        } else if (sessionData.status === 'connecting') {
+            connectBtn.disabled = true; // Pode estar aguardando QR ou conexão
+            disconnectBtn.disabled = false;
+        } else { // disconnected, logged_out
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+        }
+    }
+
+    getStatusText(status) {
+        const statusMap = {
+            'connected': 'Conectado',
+            'connecting': 'Conectando',
+            'disconnected': 'Desconectado',
+            'logged_out': 'Deslogado'
+        };
+        return statusMap[status] || status;
+    }
+
+    startStatusPolling() {
+        this.stopStatusPolling(); // Garante que apenas um intervalo esteja ativo
+        this.statusPollingInterval = setInterval(() => {
+            this.checkConnectionStatus();
+        }, 3000); // Verifica a cada 3 segundos
+    }
+
+    stopStatusPolling() {
+        if (this.statusPollingInterval) {
+            clearInterval(this.statusPollingInterval);
+            this.statusPollingInterval = null;
+        }
+    }
+
+    async checkConnectionStatus() {
+        if (!this.currentSecretCode) {
+            this.stopStatusPolling();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/qr/status/${this.currentSecretCode}`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.updateSessionUI(data.data);
+                // Se o modal de QR estiver aberto e o status mudar para conectado, fechar o modal
+                if (document.getElementById('qrModal').style.display === 'flex' && data.data.status === 'connected') {
+                    this.closeModal('qrModal');
+                    this.setSessionMessages('', 'WhatsApp conectado com sucesso!');
+                }
+            } else {
+                console.error('Erro ao verificar status:', data.error);
+                this.setSessionMessages(data.error || 'Erro ao verificar status da conexão.');
+                this.stopStatusPolling();
+            }
+        } catch (error) {
+            console.error('Erro de rede ao verificar status:', error);
+            this.setSessionMessages('Erro de rede ao verificar status. Verifique sua conexão.');
+            this.stopStatusPolling();
+        }
+    }
+
+    async handleConnectButtonClick() {
+        if (!this.currentSecretCode) {
+            this.setSessionMessages('Erro: Código secreto não definido.');
+            return;
+        }
+
+        this.openModal('qrModal');
+        const qrModalContent = document.getElementById('qrModalContent');
+        qrModalContent.innerHTML = `
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Gerando QR Code...</p>
+            </div>
+        `;
+        this.setSessionMessages('', 'Solicitando QR Code...');
+
+        try {
+            const response = await fetch(`/qr/connect/${this.currentSecretCode}`);
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.status === 'connected') {
+                    qrModalContent.innerHTML = `
+                        <div class="status-message status-connected">
+                            ✅ WhatsApp já está Conectado!
+                        </div>
+                    `;
+                    this.setSessionMessages('', 'WhatsApp já está conectado.');
+                    this.closeModal('qrModal'); // Fecha o modal se já estiver conectado
+                } else if (data.status === 'connecting' && data.data.qr_image) {
+                    qrModalContent.innerHTML = `
+                        <img src="${data.data.qr_image}" alt="QR Code" class="qr-image">
+                    `;
+                    this.setSessionMessages('', 'QR Code gerado. Escaneie para conectar.');
+                    this.startStatusPolling(); // Inicia/continua a verificação de status
+                } else {
+                    qrModalContent.innerHTML = `
+                        <div class="status-message status-connecting">
+                            ⏳ Aguardando QR Code...
+                        </div>
+                    `;
+                    this.setSessionMessages('', 'Aguardando QR Code ser gerado.');
+                    this.startStatusPolling(); // Inicia/continua a verificação de status
+                }
+            } else {
+                qrModalContent.innerHTML = `
+                    <div class="status-message status-disconnected">
+                        ❌ Erro ao gerar QR Code
+                    </div>
+                `;
+                this.setSessionMessages(data.error || 'Erro desconhecido ao gerar QR Code.');
+                if (data.code === 'NOT_FOUND') {
+                    this.closeModal('qrModal');
+                    this.showScreen('codeScreen');
+                    document.getElementById('codeError').textContent = data.error;
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao solicitar QR Code:', error);
+            qrModalContent.innerHTML = `
+                <div class="status-message status-disconnected">
+                    ❌ Erro de conexão
+                </div>
+            `;
+            this.setSessionMessages('Não foi possível conectar ao servidor para gerar QR Code.');
+        }
+    }
+
+    async disconnectInstance() {
+        if (!this.currentSecretCode) {
+            this.setSessionMessages('Nenhuma instância selecionada para desconectar.');
+            return;
+        }
+
+        if (!confirm('Tem certeza que deseja desconectar esta instância? Isso encerrará a sessão do WhatsApp.')) {
+            return;
+        }
+
+        this.setSessionMessages('', 'Desconectando...');
+        document.getElementById('disconnectBtn').disabled = true;
+        document.getElementById('connectBtn').disabled = true;
+
+        try {
+            const response = await fetch(`/qr/disconnect/${this.currentSecretCode}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                this.setSessionMessages('', 'Instância desconectada com sucesso!');
+                this.updateSessionUI({
+                    secret_code: this.currentSecretCode,
+                    status: 'logged_out',
+                    updated_at: new Date().toISOString()
+                });
+                this.stopStatusPolling();
+            } else {
+                this.setSessionMessages(`Erro ao desconectar: ${data.error || 'Erro desconhecido'}`);
+                // Re-enable buttons if disconnection failed
+                this.loadSessionDetails(); 
+            }
+        } catch (error) {
+            console.error('Erro ao desconectar instância:', error);
+            this.setSessionMessages('Erro de rede ao desconectar instância.');
+            // Re-enable buttons if network error
+            this.loadSessionDetails();
+        }
+    }
+}
+
+// Inicializar o gerenciador de sessão quando a página carregar
+const userSessionManager = new UserSessionManager();
