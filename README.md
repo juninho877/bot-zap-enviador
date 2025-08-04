@@ -97,5 +97,5 @@ POST /send
 
 ```bash
 docker build -t whatsapp-bot .
-docker run -p 3334:3334 -v $(pwd)/auth:/app/auth -v $(pwd)/connections.json:/app/connections.json whatsapp-bot
+docker run -p 3335:3335 -v $(pwd)/auth:/app/auth -v $(pwd)/connections.json:/app/connections.json whatsapp-bot
 ```

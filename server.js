@@ -7,7 +7,7 @@ const { readConnections } = require("./utils/fileStorage");
 const fs = require("fs");
 
 const app = express();
-const PORT = process.env.PORT || 3334;
+const PORT = process.env.PORT || 3335;
 const activeConnections = {};
 
 app.use(express.json());
