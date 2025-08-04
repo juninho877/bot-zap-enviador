@@ -9,16 +9,12 @@ async function startSock(secretCode, authFolderPath, activeConnections) {
   console.log(`📁 [CONN] Auth Folder: ${authFolderPath}`);
 
   try {
-    // Limpar pasta de autenticação se existir para forçar novo QR
-    if (fs.existsSync(authFolderPath)) {
-      console.log(`🧹 [CONN] Limpando pasta de auth existente: ${authFolderPath}`);
-      fs.rmSync(authFolderPath, { recursive: true, force: true });
-    }
-    
     // Criar pasta de autenticação
     if (!fs.existsSync(authFolderPath)) {
       fs.mkdirSync(authFolderPath, { recursive: true });
       console.log(`📁 [CONN] Pasta de auth criada: ${authFolderPath}`);
+    } else {
+      console.log(`📁 [CONN] Pasta de auth já existe: ${authFolderPath}`);
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(authFolderPath);
