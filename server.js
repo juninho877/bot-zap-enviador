@@ -102,8 +102,3 @@ process.on('SIGINT', () => {
   
   process.exit(0);
 });
-
-  app.listen(PORT, () => {
-    console.log(`📡 API rodando em http://localhost:${PORT}`);
-  });
-});
