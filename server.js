@@ -1,9 +1,11 @@
 const express = require("express");
+const path = require("path");
 const startSock = require("./conn");
 const sendRoute = require("./routes/send");
 const adminRoute = require("./routes/admin");
 const qrRoute = require("./routes/qr");
 const { readConnections } = require("./utils/fileStorage");
+const { authenticateAdmin } = require("./middleware/auth");
 const fs = require("fs");
 
 const app = express();
@@ -11,6 +13,10 @@ const PORT = process.env.PORT || 3335;
 const activeConnections = {};
 
 app.use(express.json());
+
+// Servir arquivos estáticos
+app.use('/admin-panel', express.static(path.join(__dirname, 'client/admin')));
+app.use('/qr-page', express.static(path.join(__dirname, 'client/qr')));
 
 // Função para inicializar conexões existentes
 async function initializeExistingConnections() {
@@ -38,8 +44,17 @@ async function initializeExistingConnections() {
 
 // Configurar rotas
 app.use("/", sendRoute(activeConnections));
-app.use("/admin", adminRoute(activeConnections));
+app.use("/admin", authenticateAdmin, adminRoute(activeConnections));
 app.use("/qr", qrRoute(activeConnections));
+
+// Redirecionar rotas principais
+app.get("/admin-panel", (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/admin/index.html'));
+});
+
+app.get("/qr-page", (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/qr/index.html'));
+});
 
 // Rota de status
 app.get("/status", (req, res) => {
@@ -76,8 +91,9 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`📡 API WhatsApp Multi-Conexão rodando em http://localhost:${PORT}`);
       console.log(`📊 Status: http://localhost:${PORT}/status`);
-      console.log(`🔧 Admin: http://localhost:${PORT}/admin/*`);
-      console.log(`📱 QR: http://localhost:${PORT}/qr/:secretCode`);
+      console.log(`🔧 Painel Admin: http://localhost:${PORT}/admin-panel`);
+      console.log(`📱 Página QR: http://localhost:${PORT}/qr-page`);
+      console.log(`📡 API Send: http://localhost:${PORT}/send`);
     });
   } catch (error) {
     console.error("❌ Erro ao iniciar servidor:", error);

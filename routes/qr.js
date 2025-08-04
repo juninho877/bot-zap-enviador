@@ -1,5 +1,6 @@
 const express = require("express");
 const { findConnection, updateConnectionStatus } = require("../utils/fileStorage");
+const { validateSecretCode } = require("../middleware/auth");
 const startSock = require("../conn");
 const QRCode = require("qrcode");
 
@@ -7,19 +8,11 @@ const router = express.Router();
 
 module.exports = (activeConnections) => {
   
-  router.get("/:secretCode", async (req, res) => {
+  router.get("/:secretCode", validateSecretCode, async (req, res) => {
     const { secretCode } = req.params;
+    const connection = req.connection; // Vem do middleware validateSecretCode
     
     try {
-      // Verifica se a conexão existe
-      const connection = findConnection(secretCode);
-      if (!connection) {
-        return res.status(404).json({
-          success: false,
-          error: "Código secreto não encontrado."
-        });
-      }
-      
       // Se já estiver conectado
       if (connection.status === 'connected' && activeConnections[secretCode]) {
         return res.json({
