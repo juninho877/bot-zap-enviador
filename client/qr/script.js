@@ -1,7 +1,7 @@
 class QRManager {
     constructor() {
         this.currentSecretCode = null;
-        this.qrCheckInterval = null;
+        this.statusCheckInterval = null;
         this.init();
     }
 
@@ -20,11 +20,12 @@ class QRManager {
         // Back button
         document.getElementById('backBtn').addEventListener('click', () => {
             this.showCodeScreen();
+            this.clearMessages();
         });
 
         // Refresh QR button
         document.getElementById('refreshQrBtn').addEventListener('click', () => {
-            this.loadQRCode();
+            this.refreshQRCode();
         });
 
         // Disconnect button
@@ -43,7 +44,7 @@ class QRManager {
         }
     }
 
-    async handleCodeSubmit() {
+    handleCodeSubmit() {
         const secretCode = document.getElementById('secretCode').value.trim();
         const errorDiv = document.getElementById('codeError');
 
@@ -55,7 +56,15 @@ class QRManager {
         this.currentSecretCode = secretCode;
         this.showQRScreen();
         this.loadQRCode();
-        errorDiv.textContent = '';
+    }
+
+    async loadQRCode() {
+        const qrContent = document.getElementById('qrContent');
+        const errorDiv = document.getElementById('qrError');
+        const successDiv = document.getElementById('qrSuccess');
+        
+        this.clearMessages();
+        
         // Mostrar loading
         qrContent.innerHTML = `
             <div class="loading">
@@ -65,33 +74,37 @@ class QRManager {
         `;
 
         try {
+            console.log(`🔍 Carregando QR para código: ${this.currentSecretCode}`);
+            
             const response = await fetch(`/qr/${this.currentSecretCode}`);
             const data = await response.json();
+
+            console.log('📡 Resposta do servidor:', data);
 
             if (response.ok) {
                 if (data.status === 'connected') {
                     this.showConnectedStatus();
+                    successDiv.textContent = '✅ WhatsApp já está conectado!';
                 } else if (data.qr_image) {
                     this.showQRCode(data.qr_image);
-                    this.startQRCheck();
+                    this.startStatusCheck();
                 } else {
-                    errorDiv.textContent = 'QR Code não disponível';
+                    this.showError('QR Code não disponível no momento');
                 }
             } else {
                 if (response.status === 404) {
-                    // Código secreto não encontrado, voltar para tela de código
                     errorDiv.textContent = 'Código secreto não encontrado';
                     setTimeout(() => {
                         this.showCodeScreen();
-                    }, 2000);
+                    }, 3000);
                 } else {
-                    errorDiv.textContent = data.error || 'Erro ao carregar QR Code';
+                    this.showError(data.error || `Erro ${response.status}: ${response.statusText}`);
                 }
             }
 
         } catch (error) {
-            errorDiv.textContent = 'Erro ao conectar com o servidor';
-            console.error('QR load error:', error);
+            console.error('❌ Erro ao carregar QR:', error);
+            this.showError('Erro ao conectar com o servidor');
         }
     }
 
@@ -122,12 +135,13 @@ class QRManager {
                 ✅ WhatsApp conectado com sucesso!
             </div>
             <div class="qr-instructions">
+                <strong>Código Secreto:</strong> <code>${this.currentSecretCode}</code><br><br>
                 Seu WhatsApp está conectado e pronto para enviar mensagens.<br>
-                Use o código secreto <strong>${this.currentSecretCode}</strong> para enviar mensagens via API.
+                Use este código secreto para enviar mensagens via API.
             </div>
         `;
 
-        this.stopQRCheck();
+        this.stopStatusCheck();
     }
 
     showDisconnectedStatus() {
@@ -138,34 +152,72 @@ class QRManager {
                 🔌 WhatsApp desconectado
             </div>
             <div class="qr-instructions">
-                A instância foi desconectada. Clique em "Atualizar QR" para gerar um novo código QR.
+                A instância foi desconectada.<br>
+                Clique em "Atualizar QR" para gerar um novo código QR.
             </div>
         `;
     }
 
-    startQRCheck() {
-        this.stopQRCheck();
+    showError(message) {
+        const qrContent = document.getElementById('qrContent');
         
-        this.qrCheckInterval = setInterval(async () => {
+        qrContent.innerHTML = `
+            <div class="status-message status-disconnected">
+                ❌ ${message}
+            </div>
+            <div class="qr-instructions">
+                Tente atualizar o QR Code ou verifique se o código secreto está correto.
+            </div>
+        `;
+    }
+
+    async refreshQRCode() {
+        const refreshBtn = document.getElementById('refreshQrBtn');
+        const originalText = refreshBtn.textContent;
+        
+        try {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ Atualizando...';
+            
+            await this.loadQRCode();
+            
+        } catch (error) {
+            console.error('❌ Erro ao atualizar QR:', error);
+        } finally {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = originalText;
+        }
+    }
+
+    startStatusCheck() {
+        this.stopStatusCheck();
+        
+        console.log('🔄 Iniciando verificação de status...');
+        
+        this.statusCheckInterval = setInterval(async () => {
             try {
-                // Verificar status através do endpoint QR em vez de admin/instances
                 const response = await fetch(`/qr/${this.currentSecretCode}`);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('📊 Status check:', data.status);
+                    
                     if (data.status === 'connected') {
                         this.showConnectedStatus();
+                        document.getElementById('qrSuccess').textContent = '🎉 Conexão estabelecida com sucesso!';
                     }
                 }
             } catch (error) {
-                console.error('Status check error:', error);
+                console.error('❌ Erro na verificação de status:', error);
             }
-        }, 3000); // Verificar a cada 3 segundos
+        }, 3000);
     }
 
-    stopQRCheck() {
-        if (this.qrCheckInterval) {
-            clearInterval(this.qrCheckInterval);
-            this.qrCheckInterval = null;
+    stopStatusCheck() {
+        if (this.statusCheckInterval) {
+            clearInterval(this.statusCheckInterval);
+            this.statusCheckInterval = null;
+            console.log('⏹️ Verificação de status parada');
         }
     }
 
@@ -177,6 +229,9 @@ class QRManager {
         const errorDiv = document.getElementById('qrError');
         const successDiv = document.getElementById('qrSuccess');
         const disconnectBtn = document.getElementById('disconnectBtn');
+        const originalText = disconnectBtn.textContent;
+
+        this.clearMessages();
 
         try {
             disconnectBtn.disabled = true;
@@ -195,18 +250,36 @@ class QRManager {
             if (response.ok) {
                 successDiv.textContent = '✅ Instância desconectada com sucesso!';
                 this.showDisconnectedStatus();
-                errorDiv.textContent = '';
+                this.stopStatusCheck();
             } else {
                 errorDiv.textContent = data.error || 'Erro ao desconectar instância';
             }
 
         } catch (error) {
+            console.error('❌ Erro ao desconectar:', error);
             errorDiv.textContent = 'Erro ao conectar com o servidor';
-            console.error('Disconnect error:', error);
         } finally {
             disconnectBtn.disabled = false;
-            disconnectBtn.textContent = '🔌 Desconectar';
+            disconnectBtn.textContent = originalText;
         }
+    }
+
+    showCodeScreen() {
+        document.getElementById('codeScreen').classList.add('active');
+        document.getElementById('qrScreen').classList.remove('active');
+        this.stopStatusCheck();
+        this.currentSecretCode = null;
+    }
+
+    showQRScreen() {
+        document.getElementById('codeScreen').classList.remove('active');
+        document.getElementById('qrScreen').classList.add('active');
+    }
+
+    clearMessages() {
+        document.getElementById('codeError').textContent = '';
+        document.getElementById('qrError').textContent = '';
+        document.getElementById('qrSuccess').textContent = '';
     }
 }
 
@@ -215,5 +288,5 @@ const qrManager = new QRManager();
 
 // Limpar interval quando a página for fechada
 window.addEventListener('beforeunload', () => {
-    qrManager.stopQRCheck();
+    qrManager.stopStatusCheck();
 });
