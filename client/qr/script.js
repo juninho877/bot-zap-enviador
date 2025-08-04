@@ -122,7 +122,15 @@ class QRManager {
                     errorDiv.textContent = 'QR Code não disponível';
                 }
             } else {
-                errorDiv.textContent = data.error || 'Erro ao carregar QR Code';
+                if (response.status === 404) {
+                    // Código secreto não encontrado, voltar para tela de código
+                    errorDiv.textContent = 'Código secreto não encontrado';
+                    setTimeout(() => {
+                        this.showCodeScreen();
+                    }, 2000);
+                } else {
+                    errorDiv.textContent = data.error || 'Erro ao carregar QR Code';
+                }
             }
 
         } catch (error) {
