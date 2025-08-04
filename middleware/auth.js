@@ -39,7 +39,10 @@ function authenticateAdmin(req, res, next) {
 function validateSecretCode(req, res, next) {
   const secretCode = req.params.secretCode || req.body.secret_code;
   
+  console.log(`🔍 [AUTH] Validando secret code: ${secretCode}`);
+  
   if (!secretCode) {
+    console.log(`❌ [AUTH] Secret code não fornecido`);
     return res.status(400).json({
       success: false,
       error: "Secret code é obrigatório"
@@ -47,13 +50,17 @@ function validateSecretCode(req, res, next) {
   }
   
   const connection = findConnection(secretCode);
+  console.log(`🔍 [AUTH] Conexão encontrada:`, connection ? 'SIM' : 'NÃO');
+  
   if (!connection) {
+    console.log(`❌ [AUTH] Secret code não encontrado: ${secretCode}`);
     return res.status(404).json({
       success: false,
       error: "Secret code não encontrado"
     });
   }
   
+  console.log(`✅ [AUTH] Secret code válido: ${secretCode}`);
   req.connection = connection;
   next();
 }

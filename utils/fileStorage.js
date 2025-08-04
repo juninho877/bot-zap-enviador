@@ -42,6 +42,8 @@ function writeConnections(connections) {
  */
 function findConnection(secretCode) {
   const connections = readConnections();
+  console.log(`🔍 [STORAGE] Procurando conexão para: ${secretCode}`);
+  console.log(`🔍 [STORAGE] Total de conexões: ${connections.length}`);
   return connections.find(conn => conn.secret_code === secretCode) || null;
 }
 
