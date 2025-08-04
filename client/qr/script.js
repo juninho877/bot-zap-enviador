@@ -170,12 +170,11 @@ class QRManager {
         
         this.qrCheckInterval = setInterval(async () => {
             try {
-                const response = await fetch(`/admin/instances`);
+                // Verificar status através do endpoint QR em vez de admin/instances
+                const response = await fetch(`/qr/${this.currentSecretCode}`);
                 if (response.ok) {
                     const data = await response.json();
-                    const instance = data.data.find(inst => inst.secret_code === this.currentSecretCode);
-                    
-                    if (instance && instance.status === 'connected') {
+                    if (data.status === 'connected') {
                         this.showConnectedStatus();
                     }
                 }
