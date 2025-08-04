@@ -1,4 +1,4 @@
-class QRManager {
+class WhatsAppConnector {
     constructor() {
         this.currentSecretCode = null;
         this.statusCheckInterval = null;
@@ -6,29 +6,30 @@ class QRManager {
     }
 
     init() {
+        console.log('🚀 [QR-CLIENT] Inicializando WhatsApp Connector');
         this.bindEvents();
         this.checkUrlParams();
     }
 
     bindEvents() {
-        // Code form
+        // Form de código
         document.getElementById('codeForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleCodeSubmit();
         });
 
-        // Back button
+        // Botão voltar
         document.getElementById('backBtn').addEventListener('click', () => {
             this.showCodeScreen();
             this.clearMessages();
         });
 
-        // Refresh QR button
+        // Botão atualizar QR
         document.getElementById('refreshQrBtn').addEventListener('click', () => {
             this.refreshQRCode();
         });
 
-        // Disconnect button
+        // Botão desconectar
         document.getElementById('disconnectBtn').addEventListener('click', () => {
             this.disconnectInstance();
         });
@@ -39,6 +40,7 @@ class QRManager {
         const secretCode = urlParams.get('code');
         
         if (secretCode) {
+            console.log('🔗 [QR-CLIENT] Código encontrado na URL:', secretCode);
             document.getElementById('secretCode').value = secretCode;
             this.handleCodeSubmit();
         }
@@ -48,6 +50,8 @@ class QRManager {
         const secretCode = document.getElementById('secretCode').value.trim();
         const errorDiv = document.getElementById('codeError');
 
+        console.log('📝 [QR-CLIENT] Processando código:', secretCode);
+
         if (!secretCode) {
             errorDiv.textContent = 'Por favor, digite o código secreto';
             return;
@@ -56,6 +60,7 @@ class QRManager {
         this.currentSecretCode = secretCode;
         this.showQRScreen();
         this.loadQRCode();
+        this.clearMessages();
     }
 
     async loadQRCode() {
@@ -69,53 +74,54 @@ class QRManager {
         qrContent.innerHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
-                <p>Carregando QR Code...</p>
+                <p>Conectando ao WhatsApp...</p>
             </div>
         `;
 
         try {
-            console.log(`🔍 Carregando QR para código: ${this.currentSecretCode}`);
+            console.log('🔄 [QR-CLIENT] Carregando QR para:', this.currentSecretCode);
             
-            const response = await fetch(`/qr/${this.currentSecretCode}`);
+            const response = await fetch(`/qr/connect/${this.currentSecretCode}`);
             const data = await response.json();
 
-            console.log('📡 Resposta do servidor:', data);
+            console.log('📡 [QR-CLIENT] Resposta recebida:', data);
 
-            if (response.ok) {
+            if (response.ok && data.success) {
                 if (data.status === 'connected') {
-                    this.showConnectedStatus();
+                    this.showConnectedStatus(data.data);
                     successDiv.textContent = '✅ WhatsApp já está conectado!';
-                } else if (data.qr_image) {
-                    this.showQRCode(data.qr_image);
+                } else if (data.status === 'connecting' && data.data.qr_image) {
+                    this.showQRCode(data.data);
                     this.startStatusCheck();
                 } else {
                     this.showError('QR Code não disponível no momento');
                 }
             } else {
-                if (response.status === 404) {
+                // Tratar erros específicos
+                if (data.code === 'NOT_FOUND') {
                     errorDiv.textContent = 'Código secreto não encontrado';
                     setTimeout(() => {
                         this.showCodeScreen();
                     }, 3000);
                 } else {
-                    this.showError(data.error || `Erro ${response.status}: ${response.statusText}`);
+                    this.showError(data.error || 'Erro ao carregar QR Code');
                 }
             }
 
         } catch (error) {
-            console.error('❌ Erro ao carregar QR:', error);
+            console.error('❌ [QR-CLIENT] Erro na requisição:', error);
             this.showError('Erro ao conectar com o servidor');
         }
     }
 
-    showQRCode(qrImage) {
+    showQRCode(data) {
         const qrContent = document.getElementById('qrContent');
         
         qrContent.innerHTML = `
             <div class="status-message status-connecting">
                 🔄 Aguardando conexão do WhatsApp
             </div>
-            <img src="${qrImage}" alt="QR Code" class="qr-image">
+            <img src="${data.qr_image}" alt="QR Code" class="qr-image">
             <div class="qr-instructions">
                 <strong>Como conectar:</strong><br>
                 1. Abra o WhatsApp no seu celular<br>
@@ -127,7 +133,7 @@ class QRManager {
         `;
     }
 
-    showConnectedStatus() {
+    showConnectedStatus(data) {
         const qrContent = document.getElementById('qrContent');
         
         qrContent.innerHTML = `
@@ -135,7 +141,7 @@ class QRManager {
                 ✅ WhatsApp conectado com sucesso!
             </div>
             <div class="qr-instructions">
-                <strong>Código Secreto:</strong> <code>${this.currentSecretCode}</code><br><br>
+                <strong>Código Secreto:</strong> <code>${data.secret_code}</code><br><br>
                 Seu WhatsApp está conectado e pronto para enviar mensagens.<br>
                 Use este código secreto para enviar mensagens via API.
             </div>
@@ -179,10 +185,11 @@ class QRManager {
             refreshBtn.disabled = true;
             refreshBtn.textContent = '⏳ Atualizando...';
             
+            console.log('🔄 [QR-CLIENT] Atualizando QR Code');
             await this.loadQRCode();
             
         } catch (error) {
-            console.error('❌ Erro ao atualizar QR:', error);
+            console.error('❌ [QR-CLIENT] Erro ao atualizar QR:', error);
         } finally {
             refreshBtn.disabled = false;
             refreshBtn.textContent = originalText;
@@ -192,23 +199,23 @@ class QRManager {
     startStatusCheck() {
         this.stopStatusCheck();
         
-        console.log('🔄 Iniciando verificação de status...');
+        console.log('🔄 [QR-CLIENT] Iniciando verificação de status');
         
         this.statusCheckInterval = setInterval(async () => {
             try {
-                const response = await fetch(`/qr/${this.currentSecretCode}`);
+                const response = await fetch(`/qr/status/${this.currentSecretCode}`);
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('📊 Status check:', data.status);
+                    console.log('📊 [QR-CLIENT] Status check:', data.data.status);
                     
-                    if (data.status === 'connected') {
-                        this.showConnectedStatus();
+                    if (data.data.status === 'connected') {
+                        this.showConnectedStatus({ secret_code: this.currentSecretCode });
                         document.getElementById('qrSuccess').textContent = '🎉 Conexão estabelecida com sucesso!';
                     }
                 }
             } catch (error) {
-                console.error('❌ Erro na verificação de status:', error);
+                console.error('❌ [QR-CLIENT] Erro na verificação de status:', error);
             }
         }, 3000);
     }
@@ -217,7 +224,7 @@ class QRManager {
         if (this.statusCheckInterval) {
             clearInterval(this.statusCheckInterval);
             this.statusCheckInterval = null;
-            console.log('⏹️ Verificação de status parada');
+            console.log('⏹️ [QR-CLIENT] Verificação de status parada');
         }
     }
 
@@ -237,17 +244,18 @@ class QRManager {
             disconnectBtn.disabled = true;
             disconnectBtn.textContent = '⏳ Desconectando...';
 
-            const response = await fetch('/admin/disconnect-instance', {
+            console.log('🔌 [QR-CLIENT] Desconectando instância:', this.currentSecretCode);
+
+            const response = await fetch(`/qr/disconnect/${this.currentSecretCode}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ secret_code: this.currentSecretCode })
+                }
             });
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (response.ok && data.success) {
                 successDiv.textContent = '✅ Instância desconectada com sucesso!';
                 this.showDisconnectedStatus();
                 this.stopStatusCheck();
@@ -256,7 +264,7 @@ class QRManager {
             }
 
         } catch (error) {
-            console.error('❌ Erro ao desconectar:', error);
+            console.error('❌ [QR-CLIENT] Erro ao desconectar:', error);
             errorDiv.textContent = 'Erro ao conectar com o servidor';
         } finally {
             disconnectBtn.disabled = false;
@@ -283,10 +291,10 @@ class QRManager {
     }
 }
 
-// Inicializar o gerenciador de QR quando a página carregar
-const qrManager = new QRManager();
+// Inicializar quando a página carregar
+const whatsappConnector = new WhatsAppConnector();
 
 // Limpar interval quando a página for fechada
 window.addEventListener('beforeunload', () => {
-    qrManager.stopStatusCheck();
+    whatsappConnector.stopStatusCheck();
 });
